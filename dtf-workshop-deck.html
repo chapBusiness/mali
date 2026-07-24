@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>طرح توجیهی کارگاه چاپ تیشرت DTF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg-0: #0a0b0a;
+    --bg-1: #131514;
+    --panel: #17191a;
+    --line: #2a2d2b;
+    --line-soft: #202221;
+    --ink: #eef1ee;
+    --ink-dim: #9aa39d;
+    --acid: #b6ff3c;
+    --acid-dim: #7fae2e;
+    --gold: #d8b25c;
+    --danger: #ff6b5e;
+    --radius: 4px;
+    --mono-tick: 1px;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0; padding:0; height:100%;
+    background: var(--bg-0);
+    color: var(--ink);
+    font-family:'Vazirmatn', sans-serif;
+    overflow:hidden;
+  }
+
+  body{
+    background-image:
+      radial-gradient(circle at 15% 15%, rgba(182,255,60,0.05), transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(216,178,92,0.05), transparent 40%);
+  }
+
+  /* ===== Registration marks (signature motif) ===== */
+  .reg-mark{
+    position:fixed;
+    width:22px; height:22px;
+    pointer-events:none;
+    z-index:50;
+    opacity:.55;
+  }
+  .reg-mark::before, .reg-mark::after{
+    content:"";
+    position:absolute;
+    background: var(--ink-dim);
+  }
+  .reg-mark::before{ width:100%; height:1px; top:50%; left:0; }
+  .reg-mark::after{ width:1px; height:100%; left:50%; top:0; }
+  .reg-mark span{
+    position:absolute; inset:4px;
+    border:1px solid var(--ink-dim);
+    border-radius:50%;
+  }
+  .reg-tl{ top:18px; left:18px; }
+  .reg-tr{ top:18px; right:18px; }
+  .reg-bl{ bottom:18px; left:18px; }
+  .reg-br{ bottom:18px; right:18px; }
+
+  /* ===== Deck shell ===== */
+  .deck{
+    position:relative;
+    width:100vw; height:100vh;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .slide{
+    position:absolute;
+    inset:0;
+    display:none;
+    padding: 64px 90px;
+    opacity:0;
+    transform: translateX(24px);
+    transition: opacity .45s ease, transform .45s ease;
+  }
+  .slide.active{
+    display:flex;
+    opacity:1;
+    transform: translateX(0);
+  }
+  .slide.leaving-prev{ transform: translateX(-24px); }
+
+  .slide-inner{
+    width:100%; height:100%;
+    display:grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 56px;
+    align-items:center;
+  }
+
+  /* ===== Text column ===== */
+  .text-col{
+    display:flex; flex-direction:column;
+    justify-content:center;
+    min-width:0;
+  }
+
+  .slide-tag{
+    display:flex; align-items:center; gap:10px;
+    font-size:13px; letter-spacing:.04em;
+    color:var(--acid);
+    margin-bottom:22px;
+    font-weight:600;
+  }
+  .slide-tag::before{
+    content:"";
+    width:26px; height:1px;
+    background: var(--acid);
+  }
+  .slide-tag .film-count{
+    color:var(--ink-dim);
+    font-weight:400;
+    margin-inline-start:auto;
+    font-variant-numeric: tabular-nums;
+    letter-spacing:.08em;
+  }
+
+  h1.headline{
+    font-size:40px;
+    line-height:1.35;
+    font-weight:800;
+    margin:0 0 14px 0;
+    color:var(--ink);
+  }
+  .subtitle{
+    font-size:16.5px;
+    color:var(--ink-dim);
+    line-height:1.9;
+    max-width:46ch;
+    margin-bottom:8px;
+    font-weight:400;
+  }
+
+  .cards{
+    display:flex; flex-direction:column; gap:14px;
+    margin-top:26px;
+  }
+
+  .card{
+    position:relative;
+    background: var(--panel);
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    display:flex; align-items:flex-start; gap:16px;
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    inset-inline-start:0; top:0; bottom:0;
+    width:3px;
+    background: var(--acid-dim);
+  }
+  .card.gold::before{ background: var(--gold); }
+  .card.total::before{ background: var(--acid); }
+  .card.total{
+    background: linear-gradient(180deg, rgba(182,255,60,0.07), rgba(182,255,60,0.02));
+    border-color: rgba(182,255,60,0.35);
+  }
+
+  .card-label{
+    font-size:13.5px;
+    color:var(--ink-dim);
+    margin-bottom:4px;
+    font-weight:500;
+  }
+  .card-value{
+    font-size:16.5px;
+    font-weight:700;
+    color:var(--ink);
+    line-height:1.6;
+  }
+  .card.total .card-value{ color:var(--acid); }
+  .card-note{
+    font-size:12.5px;
+    color:var(--ink-dim);
+    margin-top:5px;
+    line-height:1.6;
+  }
+
+  /* ===== Image column ===== */
+  .image-col{
+    position:relative;
+    height:100%;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .frame{
+    position:relative;
+    width:100%;
+    aspect-ratio: 4/5;
+    border-radius: 6px;
+    overflow:hidden;
+    border: 1px solid var(--line);
+    background: var(--bg-1);
+  }
+  .frame img{
+    width:100%; height:100%;
+    object-fit:cover;
+    filter: grayscale(15%) contrast(1.05) brightness(.92);
+    display:block;
+  }
+  .frame::after{
+    content:"";
+    position:absolute; inset:0;
+    background: linear-gradient(180deg, rgba(10,11,10,0) 55%, rgba(10,11,10,.85) 100%);
+    pointer-events:none;
+  }
+  .frame-caption{
+    position:absolute;
+    bottom:0; right:0; left:0;
+    padding:18px 22px;
+    z-index:2;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .frame-caption .cap-text{
+    font-size:13px;
+    color:var(--ink);
+    letter-spacing:.02em;
+    font-weight:600;
+  }
+  .frame-caption .cap-dot{
+    width:7px; height:7px; border-radius:50%;
+    background: var(--acid);
+    box-shadow: 0 0 8px var(--acid);
+  }
+  .frame-corner{
+    position:absolute; top:14px; left:14px;
+    display:flex; align-items:center; gap:6px;
+    font-size:11px;
+    color:var(--ink-dim);
+    letter-spacing:.06em;
+    z-index:2;
+    background: rgba(10,11,10,.55);
+    padding:4px 9px;
+    border-radius:3px;
+    border:1px solid var(--line-soft);
+  }
+
+  /* ===== Progress / stitched thread nav ===== */
+  .stitch-nav{
+    position:fixed;
+    bottom:26px; left:50%;
+    transform: translateX(-50%);
+    display:flex; align-items:center; gap:9px;
+    z-index:60;
+  }
+  .stitch{
+    width:26px; height:3px;
+    background: var(--line);
+    border-radius:2px;
+    cursor:pointer;
+    transition: background .3s ease, width .3s ease;
+  }
+  .stitch.active{
+    background: var(--acid);
+    width:40px;
+    box-shadow: 0 0 10px rgba(182,255,60,.5);
+  }
+
+  /* ===== Controls ===== */
+  .nav-btn{
+    position:fixed;
+    top:50%; transform: translateY(-50%);
+    width:48px; height:48px;
+    border-radius:50%;
+    background: var(--panel);
+    border:1px solid var(--line);
+    color: var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    z-index:60;
+    transition: border-color .2s ease, background .2s ease, transform .15s ease;
+    font-size:18px;
+  }
+  .nav-btn:hover{
+    border-color: var(--acid);
+    color: var(--acid);
+    transform: translateY(-50%) scale(1.06);
+  }
+  .nav-btn:active{ transform: translateY(-50%) scale(.95); }
+  .nav-btn.disabled{
+    opacity:.25;
+    pointer-events:none;
+  }
+  #prevBtn{ left:26px; }
+  #nextBtn{ right:26px; }
+
+  .counter{
+    position:fixed;
+    top:24px; left:50%;
+    transform:translateX(-50%);
+    font-size:12.5px;
+    color: var(--ink-dim);
+    letter-spacing:.12em;
+    z-index:60;
+    font-variant-numeric: tabular-nums;
+    display:flex; gap:6px;
+    background: rgba(10,11,10,.4);
+    padding:6px 14px;
+    border-radius:20px;
+    border:1px solid var(--line-soft);
+  }
+  .counter b{ color: var(--acid); font-weight:700; }
+
+  /* Slide 1 special (title) */
+  .title-slide .headline{ font-size:34px; }
+  .title-slide .subtitle{ font-size:17px; max-width:40ch; }
+  .title-slide .brand-mark{
+    display:inline-flex; align-items:center; gap:10px;
+    margin-bottom:30px;
+  }
+  .title-slide .brand-mark .sq{
+    width:10px; height:10px;
+    background: var(--acid);
+  }
+  .title-slide .brand-mark span{
+    font-size:13px; letter-spacing:.15em; color: var(--ink-dim);
+  }
+
+  @media (max-width: 980px){
+    .slide{ padding: 90px 26px 100px; }
+    .slide-inner{ grid-template-columns: 1fr; gap:26px; overflow-y:auto; }
+    .image-col{ order:-1; height:auto; }
+    .frame{ aspect-ratio: 16/9; }
+    h1.headline{ font-size:26px; }
+    .nav-btn{ width:40px; height:40px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .slide{ transition:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="reg-mark reg-tl"><span></span></div>
+<div class="reg-mark reg-tr"><span></span></div>
+<div class="reg-mark reg-bl"><span></span></div>
+<div class="reg-mark reg-br"><span></span></div>
+
+<div class="counter">لایه <b id="curNum">۱</b> / ۰۶</div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1 -->
+  <section class="slide active title-slide" data-index="0">
+    <div class="slide-inner">
+      <div class="text-col">
+        <div class="brand-mark"><span class="sq"></span><span>DTF PRINT WORKSHOP — نسخه ارائه به شرکا</span></div>
+        <h1 class="headline">طرح توجیهی و ساختار مالی کارگاه تولید و چاپ تیشرت (مدل DTF)</h1>
+        <p class="subtitle">بررسی دقیق سرمایه‌گذاری اولیه، هزینه‌های جاری، ریسک‌ها و قیمت تمام‌شده هر محصول</p>
+        <div class="cards">
+          <div class="card total">
+            <div>
+              <div class="card-label">هدف این ارائه</div>
+              <div class="card-value">تصمیم‌گیری شفاف و مبتنی بر عدد، پیش از هر سرمایه‌گذاری</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="image-col">
+        <div class="frame">
+          <div class="frame-corner">SHEET 01 / HERO</div>
+          <img src="kagahImg.png" alt="نمایش برند و محصول">
+          <div class="frame-caption">
+            <span class="cap-text">ویترین برند و محصول</span>
+            <span class="cap-dot"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 2 -->
+  <section class="slide" data-index="1">
+    <div class="slide-inner">
+      <div class="text-col">
+        <div class="slide-tag">سرمایه‌گذاری ثابت اولیه <span class="film-count">CAPEX · ۰۲</span></div>
+        <h1 class="headline">هزینه‌های سرمایه‌ای (CAPEX)</h1>
+        <p class="subtitle">تجهیزات اصلی و جانبی مورد نیاز برای راه‌اندازی خط تولید</p>
+        <div class="cards">
+          <div class="card">
+            <div>
+              <div class="card-label">خرید دستگاه پرس حرارتی اصلی</div>
+              <div class="card-value">۴۰ تا ۶۰ میلیون تومان</div>
+            </div>
+          </div>
+          <div class="card gold">
+            <div>
+              <div class="card-label">تجهیزات کارگاهی موجود</div>
+              <div class="card-value">هزینه صفر</div>
+              <div class="card-note">میز کار، قیچی صنعتی و پد نسوز</div>
+            </div>
+          </div>
+          <div class="card">
+            <div>
+              <div class="card-label">تجهیزات خرد و جانبی</div>
+              <div class="card-value">۵۰۰ هزار تا ۱ میلیون تومان</div>
+              <div class="card-note">چسب نسوز، پرزگیر لباس، متر و...</div>
+            </div>
+          </div>
+          <div class="card total">
+            <div>
+              <div class="card-label">مجموع سرمایه‌گذاری اولیه سخت‌افزاری</div>
+              <div class="card-value">حدود ۴۱ تا ۶۱ میلیون تومان</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="image-col">
+        <div class="frame">
+          <div class="frame-corner">SHEET 02 / EQUIP</div>
+          <img src="presandboxImg.png" alt="دستگاه پرس حرارتی">
+          <div class="frame-caption">
+            <span class="cap-text">دستگاه پرس حرارتی ۴۰×۶۰</span>
+            <span class="cap-dot"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3 -->
+  <section class="slide" data-index="2">
+    <div class="slide-inner">
+      <div class="text-col">
+        <div class="slide-tag">هزینه‌های جاری ماهانه <span class="film-count">OPEX · ۰۳</span></div>
+        <h1 class="headline">هزینه‌های عملیاتی ماهانه (OPEX)</h1>
+        <p class="subtitle">هزینه‌های ثابتی که فارغ از حجم فروش، هر ماه پرداخت می‌شود</p>
+        <div class="cards">
+          <div class="card">
+            <div>
+              <div class="card-label">اجاره / سهم مکان کارگاه</div>
+              <div class="card-value">۳ میلیون تومان در ماه</div>
+            </div>
+          </div>
+          <div class="card gold">
+            <div>
+              <div class="card-label">اشتراک ابزارهای هوش مصنوعی و طراحی</div>
+              <div class="card-value">۲ تا ۲.۵ میلیون تومان در ماه</div>
+              <div class="card-note">Midjourney + Ideogram</div>
+            </div>
+          </div>
+          <div class="card total">
+            <div>
+              <div class="card-label">مجموع هزینه‌های ثابت ماهانه</div>
+              <div class="card-value">۵ تا ۵.۵ میلیون تومان</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="image-col">
+        <div class="frame">
+          <div class="frame-corner">SHEET 03 / STUDIO</div>
+          <img src="https://images.unsplash.com/photo-1558655146-d09347e92766?q=80&w=1200&auto=format&fit=crop" alt="فضای کار و طراحی">
+          <div class="frame-caption">
+            <span class="cap-text">فضای کارگاه و طراحی دیجیتال</span>
+            <span class="cap-dot"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4 -->
+  <section class="slide" data-index="3">
+    <div class="slide-inner">
+      <div class="text-col">
+        <div class="slide-tag">قیمت تمام‌شده هر واحد <span class="film-count">UNIT · ۰۴</span></div>
+        <h1 class="headline">اقتصاد واحد و قیمت تمام‌شده هر تیشرت</h1>
+        <p class="subtitle">تفکیک دقیق هزینه مستقیم تولید یک تیشرت آماده فروش</p>
+        <div class="cards">
+          <div class="card">
+            <div>
+              <div class="card-label">تیشرت خام (با کیفیت و نخ‌پنبه)</div>
+              <div class="card-value">۴۰۰,۰۰۰ تومان</div>
+            </div>
+          </div>
+          <div class="card gold">
+            <div>
+              <div class="card-label">هزینه چاپ DTF روی هر تیشرت</div>
+              <div class="card-value">حدود ۶۷,۰۰۰ تومان</div>
+              <div class="card-note">مبنا: هر متر فیلم ۵۶×۹۰ سانتی‌متر ۴۰۰,۰۰۰ تومان — جای‌گیری ۶ طرح</div>
+            </div>
+          </div>
+          <div class="card">
+            <div>
+              <div class="card-label">بسته‌بندی، کارت تشکر و لیبل اختصاصی</div>
+              <div class="card-value">۵۰,۰۰۰ تا ۱۰۰,۰۰۰ تومان</div>
+            </div>
+          </div>
+          <div class="card total">
+            <div>
+              <div class="card-label">مجموع هزینه مستقیم تولید هر تیشرت</div>
+              <div class="card-value">حدود ۵۱۷,۰۰۰ تا ۵۶۷,۰۰۰ تومان</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="image-col">
+        <div class="frame">
+          <div class="frame-corner">SHEET 04 / DTF FILM</div>
+          <img src="boxandlableImg.png" alt="فیلم چاپ DTF و بسته‌بندی">
+          <div class="frame-caption">
+            <span class="cap-text">فیلم چاپ DTF و بسته‌بندی نهایی</span>
+            <span class="cap-dot"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 5 -->
+  <section class="slide" data-index="4">
+    <div class="slide-inner">
+      <div class="text-col">
+        <div class="slide-tag">هزینه‌های پنهان و ریسک <span class="film-count">BUFFER · ۰۵</span></div>
+        <h1 class="headline">هزینه‌های پنهان، ضایعات و بودجه بازاریابی</h1>
+        <p class="subtitle">هزینه‌های یک‌باره و اولیه‌ای که پیش از فروش پایدار باید در نظر گرفته شود</p>
+        <div class="cards">
+          <div class="card">
+            <div>
+              <div class="card-label">بودجه تست اولیه و ضایعات</div>
+              <div class="card-value">۲ تا ۳ میلیون تومان</div>
+              <div class="card-note">تست دما/فشار پرس و شستشو — یک‌بار برای شروع</div>
+            </div>
+          </div>
+          <div class="card gold">
+            <div>
+              <div class="card-label">بودجه اولیه تبلیغات و بازاریابی اینستاگرام</div>
+              <div class="card-value">۵ تا ۱۰ میلیون تومان</div>
+            </div>
+          </div>
+          <div class="card">
+            <div>
+              <div class="card-label">ملزومات ارسال پستی</div>
+              <div class="card-value">پیش‌بینی‌شده در قیمت‌گذاری نهایی</div>
+              <div class="card-note">کارتن، پاکت حباب‌دار و کرایه شهری تا پست</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="image-col">
+        <div class="frame">
+          <div class="frame-corner">SHEET 05 / OPS</div>
+          <img src="https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?q=80&w=1200&auto=format&fit=crop" alt="بسته‌بندی پستی و تبلیغات">
+          <div class="frame-caption">
+            <span class="cap-text">بسته‌بندی ارسال و کمپین تبلیغاتی</span>
+            <span class="cap-dot"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 6 -->
+  <section class="slide" data-index="5">
+    <div class="slide-inner">
+      <div class="text-col">
+        <div class="slide-tag">جمع‌بندی و مسیر پیش‌رو <span class="film-count">SUMMARY · ۰۶</span></div>
+        <h1 class="headline">جمع‌بندی مالی و نقشه راه</h1>
+        <p class="subtitle">از قیمت‌گذاری تا نقطه سربه‌سر و قدم بعدی تیم</p>
+        <div class="cards">
+          <div class="card">
+            <div>
+              <div class="card-label">قیمت فروش پیشنهادی در بازار</div>
+              <div class="card-value">۷۵۰,۰۰۰ تا ۹۵۰,۰۰۰ تومان</div>
+            </div>
+          </div>
+          <div class="card gold">
+            <div>
+              <div class="card-label">حاشیه سود خالص هر تیشرت</div>
+              <div class="card-value">حدود ۲۰۰,۰۰۰ تا ۳۵۰,۰۰۰ تومان</div>
+            </div>
+          </div>
+          <div class="card total">
+            <div>
+              <div class="card-label">نقطه سربه‌سر فروش ماهانه</div>
+              <div class="card-value">حدود ۱۵ تا ۲۵ عدد تیشرت در ماه</div>
+            </div>
+          </div>
+          <div class="card">
+            <div>
+              <div class="card-label">گام بعدی</div>
+              <div class="card-value">خرید دستگاه پرس، تست شیت چاپ اولیه و شروع سناریوی تبلیغاتی</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="image-col">
+        <div class="frame">
+          <div class="frame-corner">SHEET 06 / FINAL</div>
+          <img src="https://images.unsplash.com/photo-1503341504253-dff4815485f1?q=80&w=1200&auto=format&fit=crop" alt="مدل با تیشرت نهایی">
+          <div class="frame-caption">
+            <span class="cap-text">محصول نهایی روی مدل</span>
+            <span class="cap-dot"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="nav-btn disabled" id="prevBtn" title="اسلاید قبلی">›</div>
+<div class="nav-btn" id="nextBtn" title="اسلاید بعدی">‹</div>
+
+<div class="stitch-nav" id="stitchNav"></div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let current = 0;
+
+  const stitchNav = document.getElementById('stitchNav');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const curNumEl = document.getElementById('curNum');
+
+  const faDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+  function toFa(n){
+    return String(n).split('').map(d => faDigits[+d] ?? d).join('');
+  }
+
+  // build stitch dots
+  for (let i = 0; i < total; i++){
+    const dot = document.createElement('div');
+    dot.className = 'stitch' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    stitchNav.appendChild(dot);
+  }
+  const dots = Array.from(stitchNav.children);
+
+  function render(){
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === current);
+    });
+    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    curNumEl.textContent = toFa(current + 1);
+    prevBtn.classList.toggle('disabled', current === 0);
+    nextBtn.classList.toggle('disabled', current === total - 1);
+  }
+
+  function goTo(i){
+    if (i < 0 || i >= total || i === current) return;
+    current = i;
+    render();
+  }
+
+  // In RTL layout: "next" (forward reading direction) visually points left (‹),
+  // "prev" points right (›). Arrow Right key = previous slide, Arrow Left = next slide,
+  // matching natural RTL progression.
+  nextBtn.addEventListener('click', () => goTo(current + 1));
+  prevBtn.addEventListener('click', () => goTo(current - 1));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') goTo(current + 1);
+    if (e.key === 'ArrowRight') goTo(current - 1);
+  });
+
+  let touchStartX = null;
+  document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', (e) => {
+    if (touchStartX === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 60){
+      if (dx < 0) goTo(current + 1);
+      else goTo(current - 1);
+    }
+    touchStartX = null;
+  });
+
+  render();
+</script>
+
+</body>
+</html>
